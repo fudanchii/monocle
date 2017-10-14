@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -ex
+
+[[ $NODEP -eq 1 ]] || {
+    dep ensure $@
+}
+
+cd vendor/github.com/libgit2/git2go
+mkdir -p vendor
+
+[[ -d vendor/libgit2/.git ]] || {
+    git clone https://github.com/libgit2/libgit2 vendor/libgit2
+}
+
+script/build-libgit2-static.sh
+set +e
+go build
+
+[[ $? -eq 0 ]] || {
+    echo 'Error compiling git2go, try patching patch.go. Hahahah ;)'
+    sleep 3
+    perl -p -i -e 's/, newPtr,/, (*C.char)(newPtr),/' patch.go
+    go build
+}
