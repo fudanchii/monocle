@@ -8,11 +8,6 @@ import (
 	"github.com/fudanchii/monocle/git"
 )
 
-var (
-	buildConfig build.Build
-	buildFile   = "build.yml"
-)
-
 func main() {
 	workDir := "."
 	flag.Parse()
@@ -20,9 +15,9 @@ func main() {
 		workDir = flag.Arg(0)
 	}
 
-	changedFiles := git.FilesChanged(workDir, "")
-	fmt.Printf("%#v\n", changedFiles)
-
-	buildFiles := build.CreateBuildEntries(changedFiles)
-	fmt.Println(buildFiles)
+	buildFiles := build.CreateBuildEntries(git.FilesChanged(workDir, ""))
+	for _, buildFile := range buildFiles {
+		buildConfig := build.ParseManifest(buildFile)
+		fmt.Printf("%#v\n", buildConfig)
+	}
 }

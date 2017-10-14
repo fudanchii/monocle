@@ -11,10 +11,3 @@ func ErrCheck(err error) {
 		os.Exit(-1)
 	}
 }
-
-func NilCheck(v interface{}) {
-	if v == nil {
-		fmt.Printf("%#v is nil", v)
-		os.Exit(-1)
-	}
-}
