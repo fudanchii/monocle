@@ -1,8 +1,8 @@
 package build
 
 import (
-	"github.com/moby/moby/api/types"
-	"github.com/moby/moby/api/types/container"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 )
 
 func (b *Build) ToMobyContainerConfig() *container.Config {
@@ -13,6 +13,6 @@ func (b *Build) ToMobyHostConfig() *container.HostConfig {
 	return &container.HostConfig{}
 }
 
-func (b *Build) ToMobyNetworkConfig() *types.NetworkConfig {
-	return &types.NetworkConfig{}
+func (b *Build) ToMobyNetworkConfig() *network.NetworkingConfig {
+	return &network.NetworkingConfig{}
 }

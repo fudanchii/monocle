@@ -45,7 +45,7 @@
 
 [[projects]]
   name = "github.com/moby/moby"
-  packages = ["api/types","api/types/container","client"]
+  packages = ["client"]
   revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
   version = "v1.13.1"
 
@@ -54,6 +54,12 @@
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -76,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2211ba32758e048c68ebab17b5c95e057c43071b3fc7b9bea76766e4b1ced01f"
+  inputs-digest = "3a2ebccc3be838b30ecb2218f7108fe48500da48201d164f5c1419c30bfbd09b"
   solver-name = "gps-cdcl"
   solver-version = 1
