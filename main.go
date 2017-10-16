@@ -19,5 +19,6 @@ func main() {
 	for _, buildFile := range buildFiles {
 		buildConfig := build.ParseManifest(buildFile)
 		fmt.Printf("%#v\n", buildConfig)
+		build.Start(buildConfig)
 	}
 }

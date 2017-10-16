@@ -1,0 +1,11 @@
+envs:
+  - GOPATH=/go
+docker:
+  - run:
+      image: golang:1.9-alpine
+      volumes:
+        - '"$PWD":/go/src/github.com/fudanchii/monocle'
+      workdir: /go/src/github.com/fudanchii/monocle
+      steps: |
+        go build -v
+
