@@ -11,6 +11,7 @@ type DockerRunBuild struct {
 	Image    string           `yaml:"image"`
 	Steps    string           `yaml:"steps"`
 	Workdir  string           `yaml:"workdir"`
+	Env      []string         `yaml:"env"`
 	Volumes  []string         `yaml:"volumes"`
 	Services []DockerServices `yaml:"services"`
 }
@@ -27,11 +28,10 @@ type DockerPush struct {
 }
 
 type DockerBuild struct {
-	Run   DockerRunBuild   `yaml:"run"`
-	Build DockerImageBuild `yaml:"build"`
+	Run   *DockerRunBuild   `yaml:"run"`
+	Build *DockerImageBuild `yaml:"build"`
 }
 
 type Build struct {
-	Docker []DockerBuild `yaml:"docker"`
-	Envs   []string      `yaml:"envs"`
+	Docker DockerBuild `yaml:"docker"`
 }

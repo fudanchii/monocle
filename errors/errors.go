@@ -12,14 +12,7 @@ func ErrCheck(err error) {
 	}
 }
 
-func AssertFalse(cond bool, msg string) {
-	if cond {
-		fmt.Println("err: ", msg)
-		os.Exit(-1)
-	}
-}
-
-func AssertTrue(cond bool, msg string) {
+func Assert(cond bool, msg string) {
 	if !cond {
 		fmt.Println("err: ", msg)
 		os.Exit(-1)
