@@ -1,11 +1,19 @@
 docker:
   run:
-    image: golang:1.9-alpine
+    image: golang:1.9
     volumes:
-      - '"$PWD":/go/src/github.com/fudanchii/monocle'
+      - .:/go/src/github.com/fudanchii/monocle
     workdir: /go/src/github.com/fudanchii/monocle
     env:
       - GOPATH=/go
     steps: |
+      apt-get update -y
+      apt-get install -y --no-install-suggests --no-install-recommends \
+        ca-certificates \
+        make \
+        gcc \
+        cmake \
+        git
+
       ./updeps
-      go build -v
+      go build -tags static

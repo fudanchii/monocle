@@ -1,7 +1,11 @@
 package build
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -10,9 +14,8 @@ import (
 	"github.com/fudanchii/monocle/errors"
 )
 
-const CmdHeader = `#! /usr/bin/env sh
+const CmdHeader = `#!/bin/sh
 set -o errexit
-set -o pipefail
 
 `
 
@@ -23,18 +26,18 @@ func (b *DockerRunBuild) DockerCmdToShellScript() tmpFileCleanFunc {
 	tmp, err := ioutil.TempFile("/tmp", "monocle_steps_cmd")
 	errors.ErrCheck(err)
 
-	buffer.WriteString(CmdHeader)
-	buffer.WriteString(b.Steps)
-	tmp.Write(buffer.String())
+	cmd.WriteString(CmdHeader)
+	cmd.WriteString(b.Steps)
+	tmp.Write(cmd.Bytes())
 
 	b.Steps = tmp.Name()
-	append(b.Env, b.Steps)
+	b.Volumes = append(b.Volumes, b.Steps)
 
 	tmp.Close()
 	os.Chmod(b.Steps, 0755)
 
 	return func() {
-		os.Remove(tmp.Name)
+		os.Remove(tmp.Name())
 	}
 }
 
@@ -43,9 +46,10 @@ func (b *DockerRunBuild) ToDockerContainerConfig() *container.Config {
 	cfg.Image = b.Image
 	cfg.WorkingDir = b.Workdir
 	cfg.Tty = true
-	cfg.Cmd = b.Steps
+	cfg.Cmd = []string{b.Steps}
 	cfg.Env = make([]string, len(b.Env))
 	copy(cfg.Env, b.Env)
+	fmt.Println(cfg.Env)
 	return cfg
 }
 
@@ -59,7 +63,7 @@ func (b *DockerRunBuild) ToDockerHostConfig() *container.HostConfig {
 	return hcfg
 }
 
-func (b *DockerRunBuild) ToDockerNetworkConfig() *network.NetworkingConfig {
+func (b *DockerRunBuild) ToDockerNetworkingConfig() *network.NetworkingConfig {
 	return &network.NetworkingConfig{}
 }
 
@@ -70,6 +74,11 @@ func (b *DockerRunBuild) ToDockerClientConfig() (*container.Config, *container.H
 func splitMounts(v string) mount.Mount {
 	mnt := mount.Mount{}
 	vols := strings.Split(v, ":")
+
+	nv, err := filepath.Abs(vols[0])
+	errors.ErrCheck(err)
+
+	vols[0] = nv
 	switch len(vols) {
 	case 1:
 		mnt.Source = vols[0]
@@ -79,10 +88,11 @@ func splitMounts(v string) mount.Mount {
 		mnt.Target = vols[1]
 	default:
 		mnt.Source = vols[0]
-		mnt.Source = vols[1]
+		mnt.Target = vols[1]
 		if vols[2] == "ro" {
 			mnt.ReadOnly = true
 		}
 	}
+	mnt.Type = mount.TypeBind
 	return mnt
 }

@@ -6,17 +6,23 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/fudanchii/monocle/errors"
 
 	"github.com/docker/docker/api/types"
-	"github.com/moby/moby/client"
-	"github.com/satori/go.uuid"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 func Name(buildFile string) string {
-	name := path.Base(path.Dir(buildFile))
+	bFileLoc, err := filepath.Abs(buildFile)
+	errors.ErrCheck(err)
+
+	name := path.Base(path.Dir(bFileLoc))
 	return fmt.Sprintf("%s-%s", name, uuid.NewV5(uuid.NewV1(), buildFile))
 }
 
@@ -41,17 +47,35 @@ func startDockerRun(cli *client.Client, buildName string, config *DockerRunBuild
 	defer cancel()
 
 	rs, err := cli.ContainerCreate(ctx, cConfig, hConfig, nConfig, buildName)
-	defer cleanUpContainer(rs.ID)
 	errors.ErrCheck(err)
 
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	err = cli.ContainerStart(ctx, rs.ID, types.ContainerStartOptions{})
+	errors.ErrCheck(err)
+
+	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Hour)
 	defer cancel()
 
-	reader, err := cli.ContainerLogs(ctx, rs.ID, types.ContainerLogsOptions{})
+	scodeChan, errChan := cli.ContainerWait(ctx, rs.ID, container.WaitConditionNextExit)
+
+	reader, err := cli.ContainerLogs(ctx, rs.ID, types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+	})
 	errors.ErrCheck(err)
 
 	_, err = io.Copy(os.Stdout, reader)
-	errors.Assert(err == nil || err == io.EOF, err.Error())
+	if !(err == nil || err == io.EOF) {
+		fmt.Println("err: ", err.Error())
+		os.Exit(-1)
+	}
+
+	select {
+	case _ = <-scodeChan:
+		return
+	case errCode := <-errChan:
+		errors.ErrCheck(errCode)
+	}
 }
 
 func startDockerBuild(cli *client.Client, buildName string, config *DockerImageBuild) {
