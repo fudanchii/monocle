@@ -2,21 +2,36 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
 	"github.com/fudanchii/monocle/build"
 	"github.com/fudanchii/monocle/git"
 )
 
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage:\n\t%s <repo_dir> [git_rev]\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+}
+
 func main() {
-	workDir := "."
+	var (
+		workDir string = "."
+		rev     string = "HEAD"
+	)
+
 	flag.Parse()
-	if flag.NArg() == 1 {
+	switch flag.NArg() {
+	case 2:
+		rev = flag.Arg(1)
+		fallthrough
+	case 1:
 		workDir = flag.Arg(0)
 	}
 
-	buildFiles := build.CreateBuildEntries(git.FilesChanged(workDir, ""))
-	for _, buildFile := range buildFiles {
-		buildConfig := build.ParseManifest(buildFile)
-		build.Start(build.Name(buildFile), buildConfig)
+	for _, buildFile := range build.CreateBuildEntries(git.FilesChanged(workDir, rev)) {
+		build.Start(build.Name(buildFile), build.ParseManifest(buildFile))
 	}
 }

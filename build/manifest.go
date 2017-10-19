@@ -31,7 +31,7 @@ func ParseManifest(buildFile string) *Build {
 func CreateBuildEntries(changes git.Files) []string {
 	var buildEntries = set.NewSet()
 	for _, entry := range changes.Entries {
-		if subdir, hasManifestFile := searchBuildManifest(changes.WorkDir, entry); hasManifestFile {
+		if subdir, ok := searchBuildManifest(changes.WorkDir, entry); ok {
 			buildEntries.Add(subdir)
 		}
 	}
