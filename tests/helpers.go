@@ -49,7 +49,7 @@ func seedSimpleCommit(dir string, err error) error {
 		return fmt.Errorf("err: %s\nerr: %s", output, err.Error())
 	}
 
-	if output, err := exec.Command("git", "commit", "-am", "First commit!").CombinedOutput(); err != nil {
+	if output, err := exec.Command("git", "-c", "user.name=monocle", "-c", "user.email=monocle@monocletest.com", "commit", "-am", "First commit!").CombinedOutput(); err != nil {
 		return fmt.Errorf("err: %s\nerr: %s", output, err.Error())
 	}
 

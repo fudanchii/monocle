@@ -2,7 +2,6 @@ package build
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -49,7 +48,6 @@ func (b *DockerRunBuild) ToDockerContainerConfig() *container.Config {
 	cfg.Cmd = []string{b.Steps}
 	cfg.Env = make([]string, len(b.Env))
 	copy(cfg.Env, b.Env)
-	fmt.Println(cfg.Env)
 	return cfg
 }
 
