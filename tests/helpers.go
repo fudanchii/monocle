@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -16,8 +17,8 @@ func createFixtureRepo() (string, cleanFunc, error) {
 		return "", noop, err
 	}
 
-	if err = exec.Command("git", "init", dir).Run(); err != nil {
-		return "", noop, err
+	if output, err := exec.Command("git", "init", dir).CombinedOutput(); err != nil {
+		return "", noop, fmt.Errorf("err: %s\nerr: %s", output, err.Error())
 	}
 
 	return dir, func() {
@@ -44,12 +45,12 @@ func seedSimpleCommit(dir string, err error) error {
 		return err
 	}
 
-	if err = exec.Command("git", "add", ".").Run(); err != nil {
-		return err
+	if output, err := exec.Command("git", "add", ".").CombinedOutput(); err != nil {
+		return fmt.Errorf("err: %s\nerr: %s", output, err.Error())
 	}
 
-	if err = exec.Command("git", "commit", "-am", "First commit!").Run(); err != nil {
-		return err
+	if output, err := exec.Command("git", "commit", "-am", "First commit!").CombinedOutput(); err != nil {
+		return fmt.Errorf("err: %s\nerr: %s", output, err.Error())
 	}
 
 	return nil
