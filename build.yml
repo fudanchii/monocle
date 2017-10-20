@@ -15,5 +15,8 @@ docker:
         cmake \
         git
 
+      go get github.com/onsi/ginkgo/ginkgo
+      go get github.com/onsi/gomega
       ./updeps
-      go build -tags static
+
+      ginkgo -tags static tests
