@@ -10,7 +10,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	"github.com/fudanchii/monocle/errors"
 )
 
 const CmdHeader = `#!/bin/sh
@@ -20,10 +19,15 @@ set -o errexit
 
 type tmpFileCleanFunc func()
 
-func (b *DockerRunBuild) DockerCmdToShellScript() tmpFileCleanFunc {
+func noop() {}
+
+func (b *DockerRunBuild) DockerCmdToShellScript() (tmpFileCleanFunc, error) {
 	var cmd bytes.Buffer
+
 	tmp, err := ioutil.TempFile("/tmp", "monocle_steps_cmd")
-	errors.ErrCheck(err)
+	if err != nil {
+		return noop, err
+	}
 
 	cmd.WriteString(CmdHeader)
 	cmd.WriteString(b.Steps)
@@ -35,9 +39,7 @@ func (b *DockerRunBuild) DockerCmdToShellScript() tmpFileCleanFunc {
 	tmp.Close()
 	os.Chmod(b.Steps, 0755)
 
-	return func() {
-		os.Remove(tmp.Name())
-	}
+	return func() { os.Remove(tmp.Name()) }, err
 }
 
 func (b *DockerRunBuild) ToDockerContainerConfig() *container.Config {
@@ -51,30 +53,36 @@ func (b *DockerRunBuild) ToDockerContainerConfig() *container.Config {
 	return cfg
 }
 
-func (b *DockerRunBuild) ToDockerHostConfig() *container.HostConfig {
+func (b *DockerRunBuild) ToDockerHostConfig() (*container.HostConfig, error) {
+	var err error
+
 	hcfg := &container.HostConfig{}
 	hcfg.AutoRemove = true
 	for _, v := range b.Volumes {
-		mnt := splitMounts(v)
-		hcfg.Mounts = append(hcfg.Mounts, mnt)
+		if mnt, err := splitMounts(v); err == nil {
+			hcfg.Mounts = append(hcfg.Mounts, mnt)
+		}
 	}
-	return hcfg
+	return hcfg, err
 }
 
 func (b *DockerRunBuild) ToDockerNetworkingConfig() *network.NetworkingConfig {
 	return &network.NetworkingConfig{}
 }
 
-func (b *DockerRunBuild) ToDockerClientConfig() (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
-	return b.ToDockerContainerConfig(), b.ToDockerHostConfig(), b.ToDockerNetworkingConfig()
+func (b *DockerRunBuild) ToDockerClientConfig() (*container.Config, *container.HostConfig, *network.NetworkingConfig, error) {
+	hostConfig, err := b.ToDockerHostConfig()
+	return b.ToDockerContainerConfig(), hostConfig, b.ToDockerNetworkingConfig(), err
 }
 
-func splitMounts(v string) mount.Mount {
+func splitMounts(v string) (mount.Mount, error) {
 	mnt := mount.Mount{}
 	vols := strings.Split(v, ":")
 
 	nv, err := filepath.Abs(vols[0])
-	errors.ErrCheck(err)
+	if err != nil {
+		return mnt, err
+	}
 
 	vols[0] = nv
 	switch len(vols) {
@@ -92,5 +100,5 @@ func splitMounts(v string) mount.Mount {
 		}
 	}
 	mnt.Type = mount.TypeBind
-	return mnt
+	return mnt, err
 }
