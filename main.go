@@ -20,6 +20,8 @@ func main() {
 	var (
 		workDir string = "."
 		rev     string = "HEAD"
+		files   git.Files
+		err     error
 	)
 
 	flag.Parse()
@@ -31,7 +33,12 @@ func main() {
 		workDir = flag.Arg(0)
 	}
 
-	for _, buildFile := range build.CreateBuildEntries(git.FilesChanged(workDir, rev)) {
-		build.Start(build.Name(buildFile), build.ParseManifest(buildFile))
+	if files, err = git.FilesChanged(workDir, rev); err == nil {
+		for _, buildFile := range build.CreateBuildEntries(files) {
+			build.Start(build.Name(buildFile), build.ParseManifest(buildFile))
+		}
 	}
+
+	fmt.Printf("%#v\n", err)
+	os.Exit(-1)
 }
