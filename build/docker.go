@@ -1,12 +1,17 @@
 package build
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
@@ -101,4 +106,65 @@ func splitMounts(v string) (mount.Mount, error) {
 	}
 	mnt.Type = mount.TypeBind
 	return mnt, err
+}
+
+func (b *DockerImageBuild) ToBuildOptions() types.ImageBuildOptions {
+	opts := types.ImageBuildOptions{}
+	opts.Tags = b.Tags
+	opts.Dockerfile = b.File
+	opts.AuthConfigs = b.Auths
+	return opts
+}
+
+func (b *DockerImageBuild) CreateBuildContext() (io.Reader, error) {
+	var rawBuff = bytes.NewBuffer([]byte{})
+
+	owd, err := os.Getwd()
+	if err != nil {
+		return rawBuff, err
+	}
+
+	if strings.HasPrefix(b.Root, "/") {
+		return rawBuff, fmt.Errorf("root cannot reside out of current working dir: %s", owd)
+	}
+
+	if b.Root != "." && b.Root != "" {
+		if err = os.Chdir(b.Root); err != nil {
+			return rawBuff, err
+		}
+		defer os.Chdir(owd)
+	}
+
+	gz := gzip.NewWriter(rawBuff)
+	tw := tar.NewWriter(gz)
+
+	err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		fheader, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+
+		fheader.Name = path
+
+		if err = tw.WriteHeader(fheader); err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			if f, err := os.Open(path); err == nil {
+				_, err = io.Copy(tw, f)
+			}
+		}
+
+		return err
+	})
+
+	err = tw.Close()
+	err = gz.Close()
+
+	return rawBuff, err
 }

@@ -20,7 +20,7 @@ var _ = Describe("Git", func() {
 	})
 
 	AfterEach(func() {
-		//cleanup()
+		cleanup()
 	})
 
 	Context("test 1 file change", func() {

@@ -1,10 +1,15 @@
 package build
 
+import (
+	"github.com/docker/docker/api/types"
+)
+
 type DockerImageBuild struct {
-	File string     `yaml:"file"`
-	Repo string     `yaml:"repo"`
-	Tag  string     `yaml:"tag"`
-	Push DockerPush `yaml:"push"`
+	File  string                      `yaml:"file"`
+	Root  string                      `yaml:"root"`
+	Tags  []string                    `yaml:"tags"`
+	Auths map[string]types.AuthConfig `yam:"auths"`
+	Push  *DockerPush                 `yaml:"push"`
 }
 
 type DockerRunBuild struct {
@@ -24,6 +29,7 @@ type DockerServices struct {
 type DockerPush struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
+	Email    string `yaml:"email"`
 	Registry string `yaml:"registry"`
 }
 

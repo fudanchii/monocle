@@ -1,22 +1,19 @@
 docker:
   run:
-    image: golang:1.9
+    image: quay.io/fudanchii/go:1.9
     volumes:
       - .:/go/src/github.com/fudanchii/monocle
     workdir: /go/src/github.com/fudanchii/monocle
-    env:
-      - GOPATH=/go
     steps: |
-      apt-get update -y
-      apt-get install -y --no-install-suggests --no-install-recommends \
-        ca-certificates \
-        make \
-        gcc \
-        cmake \
-        git
-
-      go get github.com/onsi/ginkgo/ginkgo
-      go get github.com/onsi/gomega
+      set -x
       ./updeps
-
       ginkgo -tags static tests
+      go build -tags static
+      cp -f monocle .build/
+
+  build:
+    root: .build
+    tags:
+      - quay.io/fudanchii/monocle:latest
+    push:
+      registry: quay.io
