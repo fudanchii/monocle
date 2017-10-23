@@ -39,5 +39,10 @@ type DockerBuild struct {
 }
 
 type Build struct {
-	Docker DockerBuild `yaml:"docker"`
+	Docker *DockerBuild `yaml:"docker"`
+	Shell  *ShellBuild  `yaml:"shell"`
+}
+
+type ShellBuild struct {
+	Steps string `yaml:"steps"`
 }
