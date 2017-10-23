@@ -26,6 +26,8 @@ func Start(buildName string, config *Build) error {
 		return err
 	}
 
+	defer cli.Close()
+
 	runner := &RunnerCli{cli, buildName, config}
 
 	return runner.Start()

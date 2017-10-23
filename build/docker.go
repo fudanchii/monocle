@@ -143,7 +143,14 @@ func (b *DockerImageBuild) CreateBuildContext() (io.Reader, error) {
 			return err
 		}
 
-		fheader, err := tar.FileInfoHeader(info, "")
+		link := ""
+		if info.Mode()&os.ModeSymlink != 0 {
+			if link, err = os.Readlink(path); err != nil {
+				return err
+			}
+		}
+
+		fheader, err := tar.FileInfoHeader(info, link)
 		if err != nil {
 			return err
 		}
@@ -157,6 +164,7 @@ func (b *DockerImageBuild) CreateBuildContext() (io.Reader, error) {
 		if !info.IsDir() {
 			if f, err := os.Open(path); err == nil {
 				_, err = io.Copy(tw, f)
+				f.Close()
 			}
 		}
 
