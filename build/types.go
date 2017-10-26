@@ -9,16 +9,17 @@ type DockerImageBuild struct {
 	Root  string                      `yaml:"root"`
 	Tags  []string                    `yaml:"tags"`
 	Auths map[string]types.AuthConfig `yam:"auths"`
-	Push  *DockerPush                 `yaml:"push"`
+	Push  *DockerAuthConfig           `yaml:"push"`
 }
 
 type DockerRunBuild struct {
-	Image    string           `yaml:"image"`
-	Steps    string           `yaml:"steps"`
-	Workdir  string           `yaml:"workdir"`
-	Env      []string         `yaml:"env"`
-	Volumes  []string         `yaml:"volumes"`
-	Services []DockerServices `yaml:"services"`
+	Image    string            `yaml:"image"`
+	Steps    string            `yaml:"steps"`
+	Workdir  string            `yaml:"workdir"`
+	Env      []string          `yaml:"env"`
+	Volumes  []string          `yaml:"volumes"`
+	Services []DockerServices  `yaml:"services"`
+	Auth     *DockerAuthConfig `yaml:"auth"`
 }
 
 type DockerServices struct {
@@ -26,7 +27,7 @@ type DockerServices struct {
 	Name  string `yaml:"name"`
 }
 
-type DockerPush struct {
+type DockerAuthConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Email    string `yaml:"email"`

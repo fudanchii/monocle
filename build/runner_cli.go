@@ -20,6 +20,14 @@ type RunnerCli struct {
 	Config *Build
 }
 
+const (
+	reqTimeout     = 30 * time.Second
+	pullTimeout    = 30 * time.Minute
+	pushTimeout    = 30 * time.Minute
+	runWaitTimeout = 1 * time.Hour
+	buildTimeout   = 30 * time.Minute
+)
+
 func (rc *RunnerCli) Start() error {
 	var err error
 
@@ -33,6 +41,12 @@ func (rc *RunnerCli) Start() error {
 }
 
 func (rc *RunnerCli) StartDockerRun() error {
+	var (
+		pullOpts types.ImagePullOptions
+		err      error
+		rsReader io.ReadCloser
+	)
+
 	config := rc.Config.Docker.Run
 	cleanup, err := config.DockerCmdToShellScript()
 	defer cleanup()
@@ -45,18 +59,43 @@ func (rc *RunnerCli) StartDockerRun() error {
 		return &DockerRunError{err}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	retryCount := 0
+CreateContainer:
+	ctx, cancel := context.WithTimeout(context.Background(), reqTimeout)
 	defer cancel()
 
 	rs, err := rc.Cli.ContainerCreate(ctx, cConfig, hConfig, nConfig, rc.Name)
 	if err == nil {
 		err = rc.Cli.ContainerStart(ctx, rs.ID, types.ContainerStartOptions{})
 	}
+
 	if err != nil {
+		if client.IsErrNotFound(err) { // docker wont tell us what is not found, blindly believe it's the image
+			if retryCount > 0 {
+				goto BailOut
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
+			defer cancel()
+
+			if pullOpts, err = rc.imagePullOptions(config.Auth); err == nil {
+				fmt.Printf("Pulling image: %s\n", config.Image)
+				rsReader, err = rc.Cli.ImagePull(ctx, config.Image, pullOpts)
+				if err != nil {
+					goto BailOut
+				}
+				if err = parsePullPushResponseStream(rsReader, err); err != nil {
+					goto BailOut
+				}
+				retryCount = retryCount + 1
+				goto CreateContainer
+			}
+		}
+	BailOut:
 		return &DockerRunError{err}
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Hour)
+	ctx, cancel = context.WithTimeout(context.Background(), runWaitTimeout)
 	defer cancel()
 
 	scodeChan, errChan := rc.Cli.ContainerWait(ctx, rs.ID, container.WaitConditionNextExit)
@@ -91,7 +130,7 @@ func (rc *RunnerCli) StartDockerBuild() error {
 		return &DockerBuildError{err}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), buildTimeout)
 	defer cancel()
 
 	fmt.Println()
@@ -107,16 +146,7 @@ func (rc *RunnerCli) StartDockerBuild() error {
 	return nil
 }
 
-type authConfig struct {
-	Username      string `json:"username"`
-	Password      string `json:"password"`
-	Email         string `json:"email",omitempty`
-	Serveraddress string `json:"serveraddress"`
-}
-
 func (rc *RunnerCli) PushDockerImage(err error) error {
-	var regAuth authConfig
-
 	if err != nil {
 		return err
 	}
@@ -129,6 +159,38 @@ func (rc *RunnerCli) PushDockerImage(err error) error {
 	fmt.Println()
 	fmt.Println("----- Pushing image -----")
 
+	pullOpts, err := rc.imagePullOptions(config)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), pushTimeout)
+	defer cancel()
+
+	image := rc.Config.Docker.Build.Tags[0]
+	outr, err := rc.Cli.ImagePush(ctx, image, types.ImagePushOptions(pullOpts))
+	err = parsePullPushResponseStream(outr, err)
+
+	return err
+}
+
+type authConfig struct {
+	Username      string `json:"username"`
+	Password      string `json:"password"`
+	Email         string `json:"email",omitempty`
+	Serveraddress string `json:"serveraddress"`
+}
+
+func (rc *RunnerCli) imagePullOptions(config *DockerAuthConfig) (types.ImagePullOptions, error) {
+	var (
+		regAuth authConfig
+		result  types.ImagePullOptions
+	)
+
+	if config == nil {
+		return result, nil
+	}
+
 	regAuth.Username = config.User
 	regAuth.Password = config.Password
 	regAuth.Email = config.Email
@@ -138,22 +200,12 @@ func (rc *RunnerCli) PushDockerImage(err error) error {
 
 	regJson, err := json.Marshal(regAuth)
 	if err != nil {
-		return err
+		return result, err
 	}
 
 	regb64 := base64.StdEncoding.EncodeToString(regJson)
-	pushOpts := types.ImagePushOptions{
-		RegistryAuth: regb64,
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
-	defer cancel()
-
-	image := rc.Config.Docker.Build.Tags[0]
-	outr, err := rc.Cli.ImagePush(ctx, image, pushOpts)
-	err = parsePushResponseStream(outr, err)
-
-	return err
+	result.RegistryAuth = regb64
+	return result, nil
 }
 
 func authConfigFromEnv(reg *authConfig) {
@@ -195,10 +247,11 @@ func parseBuildResponseStream(in io.Reader, err error) error {
 	return nil
 }
 
-func parsePushResponseStream(in io.Reader, err error) error {
+func parsePullPushResponseStream(in io.Reader, err error) error {
 	var (
-		msg map[string]interface{} = make(map[string]interface{})
-		dec *json.Decoder          = json.NewDecoder(in)
+		msg               map[string]interface{} = make(map[string]interface{})
+		dec               *json.Decoder          = json.NewDecoder(in)
+		currentID, nextID string
 	)
 
 	if err != nil {
@@ -211,16 +264,28 @@ func parsePushResponseStream(in io.Reader, err error) error {
 		}
 
 		if msg["id"] != nil {
-			fmt.Print(msg["id"].(string))
+			nextID, _ = msg["id"].(string)
+			if nextID == currentID {
+				fmt.Print("\r\033[K")
+			} else {
+				currentID = nextID
+				fmt.Println()
+			}
+			fmt.Print(nextID)
 			fmt.Print(": ")
 		}
 		if msg["status"] != nil {
-			fmt.Println(msg["status"].(string))
+			fmt.Printf("%s ", msg["status"].(string))
+		}
+		if msg["progress"] != nil {
+			fmt.Print(msg["progress"].(string))
 		}
 		if msg["error"] != nil {
+			fmt.Println()
 			return fmt.Errorf("push err: %s", msg["error"].(string))
 		}
 	}
+	fmt.Println()
 	return nil
 }
 
@@ -229,7 +294,7 @@ type DockerRunError struct {
 }
 
 func (dr *DockerRunError) Error() string {
-	return fmt.Sprintf("docker run error, cause: %s", dr.err.Error())
+	return fmt.Sprintf("docker run error, caused by: [%T] %s", dr.err, dr.err.Error())
 }
 
 type DockerBuildError struct {
@@ -237,5 +302,5 @@ type DockerBuildError struct {
 }
 
 func (db *DockerBuildError) Error() string {
-	return fmt.Sprintf("docker build error, cause: %s", db.err.Error())
+	return fmt.Sprintf("docker build error, caused by: [%T] %s", db.err, db.err.Error())
 }
