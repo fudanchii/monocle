@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-type RunnerCli struct {
+type DockerRunner struct {
 	Cli    *client.Client
 	Name   string
 	Config *Build
@@ -28,7 +28,7 @@ const (
 	buildTimeout   = 30 * time.Minute
 )
 
-func (rc *RunnerCli) Start() error {
+func (rc *DockerRunner) Start() error {
 	var err error
 
 	if rc.Config.Docker.Run != nil {
@@ -40,7 +40,7 @@ func (rc *RunnerCli) Start() error {
 	return err
 }
 
-func (rc *RunnerCli) StartDockerRun() error {
+func (rc *DockerRunner) StartDockerRun() error {
 	var (
 		pullOpts types.ImagePullOptions
 		err      error
@@ -122,7 +122,7 @@ CreateContainer:
 	}
 }
 
-func (rc *RunnerCli) StartDockerBuild() error {
+func (rc *DockerRunner) StartDockerBuild() error {
 	config := rc.Config.Docker.Build
 	buildOpts := config.ToBuildOptions()
 	ctxReader, err := config.CreateBuildContext()
@@ -146,7 +146,7 @@ func (rc *RunnerCli) StartDockerBuild() error {
 	return nil
 }
 
-func (rc *RunnerCli) PushDockerImage(err error) error {
+func (rc *DockerRunner) PushDockerImage(err error) error {
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ type authConfig struct {
 	Serveraddress string `json:"serveraddress"`
 }
 
-func (rc *RunnerCli) imagePullOptions(config *DockerAuthConfig) (types.ImagePullOptions, error) {
+func (rc *DockerRunner) imagePullOptions(config *DockerAuthConfig) (types.ImagePullOptions, error) {
 	var (
 		regAuth authConfig
 		result  types.ImagePullOptions

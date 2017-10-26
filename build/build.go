@@ -32,7 +32,7 @@ func StartDocker(buildName string, config *Build) error {
 
 	defer cli.Close()
 
-	runner := &RunnerCli{cli, buildName, config}
+	runner := &DockerRunner{cli, buildName, config}
 
 	return runner.Start()
 }
