@@ -98,8 +98,6 @@ CreateContainer:
 	ctx, cancel = context.WithTimeout(context.Background(), runWaitTimeout)
 	defer cancel()
 
-	scodeChan, errChan := rc.Cli.ContainerWait(ctx, rs.ID, container.WaitConditionNextExit)
-
 	if reader, err := rc.Cli.ContainerLogs(ctx, rs.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
@@ -110,6 +108,8 @@ CreateContainer:
 			return &DockerRunError{err}
 		}
 	}
+
+	scodeChan, errChan := rc.Cli.ContainerWait(ctx, rs.ID, container.WaitConditionNextExit)
 
 	select {
 	case rs := <-scodeChan:
