@@ -23,8 +23,9 @@ type DockerRunBuild struct {
 }
 
 type DockerServices struct {
-	Image string `yaml:"image"`
-	Name  string `yaml:"name"`
+	Image string            `yaml:"image"`
+	Name  string            `yaml:"name"`
+	Auth  *DockerAuthConfig `yaml:"auth"`
 }
 
 type DockerAuthConfig struct {

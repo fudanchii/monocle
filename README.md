@@ -12,6 +12,7 @@ Given repository with folder `A` and `B`, and `build.yml` on each respective fol
 
 !!!
 ---
-still work on progress.
+Monocle is a build tool, but it's also aimed to be on par with docker-compose to help in dev environment.  
+It still lacks of multi-container / service containers support though. Also it's still has subpar UX for remote docker.
 
 released under MIT.
