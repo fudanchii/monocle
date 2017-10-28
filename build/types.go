@@ -23,10 +23,40 @@ type DockerRunBuild struct {
 }
 
 type DockerServices struct {
-	Image string            `yaml:"image"`
-	Name  string            `yaml:"name"`
-	Auth  *DockerAuthConfig `yaml:"auth"`
+	Image     string                  `yaml:"image"`
+	Name      string                  `yaml:"name"`
+	Auth      *DockerAuthConfig       `yaml:"auth"`
+	Ports     []string                `yaml:"port"`
+	Readiness *DockerServiceReadiness `yaml:"readiness"`
+	DependOn  []string                `yaml:"depend_on"`
 }
+
+type DockerServiceReadiness struct {
+	Http           *DockerServiceHttpReady `yaml:"http"`
+	Cmd            *DockerServiceCmdReady  `yaml:"cmd"`
+	Tcp            *DockerServiceTcpReady  `yaml:"tcp"`
+	Udp            *DockerServiceUdpReady  `yaml:"udp"`
+	InitialWait    int                     `yaml:"initial_wait"`
+	ErrorThreshold int                     `yaml:"error_threshold"`
+	OkThreshold    int                     `yaml:"ok_threshold"`
+}
+
+type DockerServiceHttpReady struct {
+	Endpoint       string `yaml:"endpoint"`
+	ExpectedStatus []int  `yaml:"expected_status"`
+}
+
+type DockerServiceCmdReady struct {
+	Command string `yaml:"command"`
+}
+
+type DockerServiceTcpReady struct {
+	Port             int    `yaml:"port"`
+	Send             string `yaml:"send"`
+	ExpectedResponse string `yaml:"ecpected_response"`
+}
+
+type DockerServiceUdpReady DockerServiceTcpReady
 
 type DockerAuthConfig struct {
 	User     string `yaml:"user"`
