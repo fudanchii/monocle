@@ -3,6 +3,7 @@ package build
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -37,8 +38,34 @@ func StartDocker(buildName string, config *Build) error {
 	return runner.Start()
 }
 
+func runShellCommand(cmdstr string) error {
+	var (
+		err            error
+		stdout, stderr io.ReadCloser
+	)
+
+	cmd := exec.Command(cmdstr)
+	if stdout, err = cmd.StdoutPipe(); err == nil {
+		go io.Copy(os.Stdout, stdout)
+		if stderr, err = cmd.StderrPipe(); err == nil {
+			go io.Copy(os.Stderr, stderr)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+	return cmd.Wait()
+}
+
 func StartShell(buildName string, config *Build) error {
-	var cmd bytes.Buffer
+	var (
+		err error
+		cmd bytes.Buffer
+	)
 
 	cfg := config.Shell
 
@@ -55,9 +82,7 @@ func StartShell(buildName string, config *Build) error {
 	os.Chmod(tmp.Name(), 0755)
 	defer os.Remove(tmp.Name())
 
-	output, err := exec.Command(tmp.Name()).CombinedOutput()
-	fmt.Println(string(output))
-	return err
+	return runShellCommand(tmp.Name())
 }
 
 func Start(buildName string, config *Build) error {
