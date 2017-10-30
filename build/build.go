@@ -86,14 +86,17 @@ func StartShell(buildName string, config *Build) error {
 }
 
 func Start(buildName string, config *Build) error {
-	if config.Docker != nil && config.Shell != nil {
-		return fmt.Errorf("cannot run both docker and shell")
+	if config.Shell != nil {
+		if err := StartShell(buildName, config); err != nil {
+			return err
+		}
 	}
-	switch {
-	case config.Docker != nil:
-		return StartDocker(buildName, config)
-	case config.Shell != nil:
-		return StartShell(buildName, config)
+
+	if config.Docker != nil {
+		if err := StartDocker(buildName, config); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
