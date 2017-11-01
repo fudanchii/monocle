@@ -35,7 +35,12 @@ func main() {
 
 	if files, err = git.FilesChanged(workDir, rev); err == nil {
 		for _, buildFile := range build.CreateBuildEntries(files) {
-			if err = build.Start(build.Name(buildFile), build.ParseManifest(buildFile)); err != nil {
+			var manifest *build.Build
+			manifest, err = build.ParseManifest(buildFile)
+			if err != nil {
+				break
+			}
+			if err = build.Start(build.Name(buildFile), manifest); err != nil {
 				break
 			}
 		}

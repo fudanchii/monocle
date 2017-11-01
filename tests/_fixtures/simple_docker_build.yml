@@ -1,0 +1,6 @@
+docker:
+  build:
+    file: .build/Dockerfile
+    root: .build
+    tags:
+      - test/image:latest
