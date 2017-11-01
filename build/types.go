@@ -7,7 +7,7 @@ import (
 type DockerImageBuild struct {
 	File  string                      `yaml:"file"`
 	Root  string                      `yaml:"root"`
-	Tags  []string                    `yaml:"tags"`
+	Tags  []string                    `yaml:"tags" templatable:""`
 	Auths map[string]types.AuthConfig `yam:"auths"`
 	Push  *DockerAuthConfig           `yaml:"push"`
 }
@@ -71,10 +71,16 @@ type DockerBuild struct {
 }
 
 type Build struct {
-	Docker *DockerBuild `yaml:"docker"`
-	Shell  *ShellBuild  `yaml:"shell"`
+	*Variables `yaml:"variables"`
+	Docker     *DockerBuild `yaml:"docker"`
+	Shell      *ShellBuild  `yaml:"shell"`
 }
 
 type ShellBuild struct {
 	Steps string `yaml:"steps"`
+}
+
+type Variables struct {
+	Eval map[string]string `yaml:"eval"`
+	Env  map[string]string `yaml:"env"`
 }

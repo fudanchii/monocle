@@ -1,0 +1,12 @@
+variables:
+  eval:
+    test: echo -n "ayyyyyy, hola!"
+    forTag: echo yay
+  env:
+    test: TEST_ENV
+docker:
+  build:
+    file: .build/Dockerfile
+    root: .build
+    tags:
+      - test/image:{{.Eval.forTag}}

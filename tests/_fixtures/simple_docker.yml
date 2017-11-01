@@ -1,0 +1,10 @@
+docker:
+  run:
+    image: dummy/image
+    steps: |
+      ls
+    workdir: test_path/yay
+    env:
+      - PATH=/nowhere/bin
+    volumes:
+      - .:/tmp
