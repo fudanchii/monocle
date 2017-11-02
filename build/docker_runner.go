@@ -147,6 +147,8 @@ func (rc *DockerRunner) StartDockerBuild() error {
 }
 
 func (rc *DockerRunner) PushDockerImage(err error) error {
+	var out io.Reader
+
 	if err != nil {
 		return err
 	}
@@ -168,8 +170,8 @@ func (rc *DockerRunner) PushDockerImage(err error) error {
 	defer cancel()
 
 	for _, image := range rc.Config.Docker.Build.Tags {
-		outr, err := rc.Cli.ImagePush(ctx, image, types.ImagePushOptions(pullOpts))
-		err = parsePullPushResponseStream(outr, err)
+		out, err = rc.Cli.ImagePush(ctx, image, types.ImagePushOptions(pullOpts))
+		err = parsePullPushResponseStream(out, err)
 		if err != nil {
 			break
 		}
