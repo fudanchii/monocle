@@ -10,19 +10,19 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/fudanchii/monocle/errors"
-
 	"github.com/docker/docker/client"
 
 	uuid "github.com/satori/go.uuid"
 )
 
-func Name(buildFile string) string {
+func Name(buildFile string) (string, error) {
 	bFileLoc, err := filepath.Abs(buildFile)
-	errors.ErrCheck(err)
+	if err != nil {
+		return "", err
+	}
 
 	name := path.Base(path.Dir(bFileLoc))
-	return fmt.Sprintf("%s-%s", name, uuid.NewV5(uuid.NewV1(), buildFile))
+	return fmt.Sprintf("%s-%s", name, uuid.NewV5(uuid.NewV1(), buildFile)), nil
 }
 
 func StartDocker(buildName string, config *Build) error {

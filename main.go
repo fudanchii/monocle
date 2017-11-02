@@ -18,10 +18,11 @@ func init() {
 
 func main() {
 	var (
-		workDir string = "."
-		rev     string = "HEAD"
-		files   git.Files
-		err     error
+		buildName string
+		workDir   string = "."
+		rev       string = "HEAD"
+		files     git.Files
+		err       error
 	)
 
 	flag.Parse()
@@ -40,7 +41,13 @@ func main() {
 			if err != nil {
 				break
 			}
-			if err = build.Start(build.Name(buildFile), manifest); err != nil {
+
+			buildName, err = build.Name(buildFile)
+			if err != nil {
+				break
+			}
+
+			if err = build.Start(buildName, manifest); err != nil {
 				break
 			}
 		}
