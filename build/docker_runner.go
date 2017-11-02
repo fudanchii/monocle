@@ -116,7 +116,7 @@ CreateContainer:
 		if rs.StatusCode == 0 {
 			return nil
 		}
-		return &DockerRunError{fmt.Errorf("container exit code: %d\n", rs.StatusCode)}
+		return &DockerRunError{fmt.Errorf("container exit code: %d", rs.StatusCode)}
 	case err = <-errChan:
 		return &DockerRunError{err}
 	}
@@ -167,9 +167,13 @@ func (rc *DockerRunner) PushDockerImage(err error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), pushTimeout)
 	defer cancel()
 
-	image := rc.Config.Docker.Build.Tags[0]
-	outr, err := rc.Cli.ImagePush(ctx, image, types.ImagePushOptions(pullOpts))
-	err = parsePullPushResponseStream(outr, err)
+	for _, image := range rc.Config.Docker.Build.Tags {
+		outr, err := rc.Cli.ImagePush(ctx, image, types.ImagePushOptions(pullOpts))
+		err = parsePullPushResponseStream(outr, err)
+		if err != nil {
+			break
+		}
+	}
 
 	return err
 }
@@ -177,7 +181,7 @@ func (rc *DockerRunner) PushDockerImage(err error) error {
 type authConfig struct {
 	Username      string `json:"username"`
 	Password      string `json:"password"`
-	Email         string `json:"email",omitempty`
+	Email         string `json:"email,omitempty"`
 	Serveraddress string `json:"serveraddress"`
 }
 
@@ -198,12 +202,12 @@ func (rc *DockerRunner) imagePullOptions(config *DockerAuthConfig) (types.ImageP
 
 	authConfigFromEnv(&regAuth)
 
-	regJson, err := json.Marshal(regAuth)
+	regJSON, err := json.Marshal(regAuth)
 	if err != nil {
 		return result, err
 	}
 
-	regb64 := base64.StdEncoding.EncodeToString(regJson)
+	regb64 := base64.StdEncoding.EncodeToString(regJSON)
 	result.RegistryAuth = regb64
 	return result, nil
 }
@@ -222,8 +226,8 @@ func authConfigFromEnv(reg *authConfig) {
 
 func parseBuildResponseStream(in io.Reader, err error) error {
 	var (
-		msg map[string]interface{} = make(map[string]interface{})
-		dec *json.Decoder          = json.NewDecoder(in)
+		msg = make(map[string]interface{})
+		dec = json.NewDecoder(in)
 	)
 
 	if err != nil {
@@ -249,8 +253,8 @@ func parseBuildResponseStream(in io.Reader, err error) error {
 
 func parsePullPushResponseStream(in io.Reader, err error) error {
 	var (
-		msg               map[string]interface{} = make(map[string]interface{})
-		dec               *json.Decoder          = json.NewDecoder(in)
+		msg               = make(map[string]interface{})
+		dec               = json.NewDecoder(in)
 		currentID, nextID string
 	)
 
