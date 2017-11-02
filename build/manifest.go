@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/fudanchii/monocle/git"
 	"github.com/fudanchii/monocle/set"
@@ -36,7 +35,7 @@ func ParseManifest(buildFile string) (*Build, error) {
 // by calling searchBuildManifest to check if there is BuildFile exist in that folder.
 func CreateBuildEntries(changes git.Files) []string {
 	var buildEntries = set.NewSet()
-	for _, entry := range append([]string{"/"}, changes.Entries...) {
+	for _, entry := range changes.Entries {
 		if subdir, ok := searchBuildManifest(changes.WorkDir, entry); ok {
 			buildEntries.Add(subdir)
 		}
@@ -45,12 +44,15 @@ func CreateBuildEntries(changes git.Files) []string {
 }
 
 func searchBuildManifest(workdir, item string) (string, bool) {
-	var pathFragment string
-	for _, fr := range strings.Split(path.Dir(item), "/") {
-		pathFragment = path.Join(pathFragment, fr)
+	var pathFragment = item
+	for {
+		pathFragment = path.Dir(pathFragment)
 		bfile := path.Join(workdir, pathFragment, BuildFile)
 		if _, err := os.Stat(bfile); err == nil {
 			return bfile, true
+		}
+		if pathFragment == "." {
+			break
 		}
 	}
 	return "", false
