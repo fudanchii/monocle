@@ -3,11 +3,11 @@ package build
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"os"
 	"os/exec"
 	"reflect"
 	"strings"
+	"text/template"
 
 	shellquote "github.com/kballard/go-shellquote"
 )
@@ -35,6 +35,8 @@ func evalVars(b *Build, err error) (*Build, error) {
 	return evalTemplatable(b, nil)
 }
 
+// I said safely but really this function only surpress error
+// and it's still able to exec unsafe commands
 func evalCommandSafely(v string) string {
 	cmdWithArgs, err := shellquote.Split(v)
 	if err != nil {
@@ -44,6 +46,7 @@ func evalCommandSafely(v string) string {
 	if output, err := exec.Command(cmdWithArgs[0], cmdWithArgs[1:]...).Output(); err == nil {
 		return strings.TrimSpace(string(output))
 	}
+	fmt.Println("error executing command, will return empty string, ignored: ", err.Error())
 	return ""
 }
 
