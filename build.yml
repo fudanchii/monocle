@@ -11,7 +11,7 @@ docker:
     steps: |
       set -x
       ./updeps
-      ginkgo -tags static tests
+      ginkgo -tags static ./...
       go build -a -tags "static netgo" -ldflags "-extldflags '-static'"
       cp -f monocle .build/
 

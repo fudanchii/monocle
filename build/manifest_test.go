@@ -1,10 +1,8 @@
-package tests
+package build
 
 import (
 	"os"
 	"strings"
-
-	"github.com/fudanchii/monocle/build"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,12 +11,12 @@ import (
 var _ = Describe("Build Manifest", func() {
 	Context("when parse build manifest with simple shell runner", func() {
 		var (
-			bm  *build.Build
+			bm  *Build
 			err error
 		)
 
 		BeforeEach(func() {
-			bm, err = build.ParseManifest("_fixtures/simple_shell.yml")
+			bm, err = ParseManifest("_fixtures/simple_shell.yml")
 		})
 
 		It("should not error", func() {
@@ -36,12 +34,12 @@ var _ = Describe("Build Manifest", func() {
 
 	Context("when parse build manifest with simple docker run", func() {
 		var (
-			bm  *build.Build
+			bm  *Build
 			err error
 		)
 
 		BeforeEach(func() {
-			bm, err = build.ParseManifest("_fixtures/simple_docker.yml")
+			bm, err = ParseManifest("_fixtures/simple_docker.yml")
 		})
 
 		It("should not error", func() {
@@ -71,12 +69,12 @@ var _ = Describe("Build Manifest", func() {
 
 	Context("when parse build manifest with simple docker build", func() {
 		var (
-			bm  *build.Build
+			bm  *Build
 			err error
 		)
 
 		BeforeEach(func() {
-			bm, err = build.ParseManifest("_fixtures/simple_docker_build.yml")
+			bm, err = ParseManifest("_fixtures/simple_docker_build.yml")
 		})
 
 		It("should not error", func() {
@@ -99,13 +97,13 @@ var _ = Describe("Build Manifest", func() {
 
 	Context("when parse build manifest with variables interpolation", func() {
 		var (
-			bm  *build.Build
+			bm  *Build
 			err error
 		)
 
 		BeforeEach(func() {
 			os.Setenv("TEST_ENV", "hello")
-			bm, err = build.ParseManifest("_fixtures/withvars_docker_build.yml")
+			bm, err = ParseManifest("_fixtures/withvars_docker_build.yml")
 		})
 
 		It("should not error", func() {
