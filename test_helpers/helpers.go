@@ -1,4 +1,4 @@
-package tests
+package test_helpers
 
 import (
 	"fmt"
@@ -9,21 +9,21 @@ import (
 
 type cleanFunc func()
 
-func noop() {}
+func Noop() {}
 
 const (
 	gitUser  = "user.name=monocle"
 	gitEmail = "user.email=monocle@monocletest.com"
 )
 
-func createFixtureRepo() (string, cleanFunc, error) {
+func CreateFixtureRepo() (string, cleanFunc, error) {
 	dir, err := ioutil.TempDir("/tmp", "monocle_test_")
 	if err != nil {
-		return "", noop, err
+		return "", Noop, err
 	}
 
 	if output, err := exec.Command("git", "init", dir).CombinedOutput(); err != nil {
-		return "", noop, fmt.Errorf("err: %s\nerr: %s", output, err.Error())
+		return "", Noop, fmt.Errorf("err: %s\nerr: %s", output, err.Error())
 	}
 
 	return dir, func() {
@@ -36,7 +36,7 @@ type fileRep struct {
 	content []byte
 }
 
-func createCommit(dir string, files []fileRep, cmsg string, err error) error {
+func CreateCommit(dir string, files []fileRep, cmsg string, err error) error {
 	if err != nil {
 		return err
 	}
@@ -68,15 +68,15 @@ func createCommit(dir string, files []fileRep, cmsg string, err error) error {
 	return nil
 }
 
-func seedSimpleCommit(dir string, err error) error {
+func SeedSimpleCommit(dir string, err error) error {
 	f := []fileRep{fileRep{"a", []byte{'a', 'b', 'c', '\n'}}}
-	return createCommit(dir, f, "First commit!", err)
+	return CreateCommit(dir, f, "First commit!", err)
 }
 
-func seedAnotherCommit(dir string, err error) error {
+func SeedAnotherCommit(dir string, err error) error {
 	f := []fileRep{
 		fileRep{"b", []byte{'d', 'e', 'f', '\n'}},
 		fileRep{"c", []byte{'g', 'h', 'i', '\n'}},
 	}
-	return createCommit(dir, f, "Second commit!", err)
+	return CreateCommit(dir, f, "Second commit!", err)
 }
