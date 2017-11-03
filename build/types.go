@@ -8,7 +8,7 @@ type DockerImageBuild struct {
 	File  string                      `yaml:"file"`
 	Root  string                      `yaml:"root"`
 	Tags  []string                    `yaml:"tags" templatable:""`
-	Auths map[string]types.AuthConfig `yam:"auths"`
+	Auths map[string]types.AuthConfig `yaml:"auths"`
 	Push  *DockerAuthConfig           `yaml:"push"`
 }
 
