@@ -13,29 +13,32 @@ type DockerImageBuild struct {
 }
 
 type DockerRunBuild struct {
-	Image    string            `yaml:"image"`
-	Steps    string            `yaml:"steps"`
-	Workdir  string            `yaml:"workdir"`
-	Env      []string          `yaml:"env"`
-	Volumes  []string          `yaml:"volumes"`
-	Services []DockerServices  `yaml:"services"`
-	Auth     *DockerAuthConfig `yaml:"auth"`
+	Image    string              `yaml:"image"`
+	Steps    string              `yaml:"steps"`
+	Workdir  string              `yaml:"workdir"`
+	Env      []string            `yaml:"env"`
+	Volumes  []map[string]string `yaml:"volumes"`
+	Services []DockerServices    `yaml:"services"`
+	Auth     *DockerAuthConfig   `yaml:"auth"`
 }
 
 type DockerServices struct {
 	Image     string                  `yaml:"image"`
 	Name      string                  `yaml:"name"`
+	Command   string                  `yaml:"command"`
+	Env       []string                `yaml:"env"`
 	Auth      *DockerAuthConfig       `yaml:"auth"`
 	Ports     []string                `yaml:"port"`
+	Volumes   []map[string]string     `yaml:"volumes"`
 	Readiness *DockerServiceReadiness `yaml:"readiness"`
-	DependOn  []string                `yaml:"depend_on"`
+	DependsOn []string                `yaml:"depends_on"`
 }
 
 type DockerServiceReadiness struct {
-	Http           *DockerServiceHttpReady `yaml:"http"`
+	HTTP           *DockerServiceHttpReady `yaml:"http"`
 	Cmd            *DockerServiceCmdReady  `yaml:"cmd"`
-	Tcp            *DockerServiceTcpReady  `yaml:"tcp"`
-	Udp            *DockerServiceUdpReady  `yaml:"udp"`
+	TCP            *DockerServiceTcpReady  `yaml:"tcp"`
+	UDP            *DockerServiceUdpReady  `yaml:"udp"`
 	InitialWait    int                     `yaml:"initial_wait"`
 	ErrorThreshold int                     `yaml:"error_threshold"`
 	OkThreshold    int                     `yaml:"ok_threshold"`
