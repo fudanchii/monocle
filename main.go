@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fudanchii/monocle/build"
 	"github.com/fudanchii/monocle/git"
@@ -35,6 +36,21 @@ func main() {
 	}
 
 	if files, err = git.FilesChanged(workDir, rev); err == nil {
+		var (
+			wkdir, cdir string
+		)
+
+		if wkdir, err = filepath.Abs(workDir); err != nil {
+			goto BailOut
+		}
+		if cdir, err = os.Getwd(); err != nil {
+			goto BailOut
+		}
+		if wkdir != cdir {
+			if err = os.Chdir(wkdir); err != nil {
+				goto BailOut
+			}
+		}
 		for _, buildFile := range build.CreateBuildEntries(files) {
 			var manifest *build.Build
 			manifest, err = build.ParseManifest(buildFile)
@@ -53,6 +69,7 @@ func main() {
 		}
 	}
 
+BailOut:
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		os.Exit(-1)
