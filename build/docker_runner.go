@@ -248,6 +248,9 @@ func parseBuildResponseStream(in io.Reader, err error) error {
 				fmt.Printf("%s: %v\n", k, v)
 			}
 		}
+		if msg["error"] != nil {
+			return fmt.Errorf("build err: %s", msg["error"].(string))
+		}
 	}
 
 	return nil
