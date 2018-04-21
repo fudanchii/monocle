@@ -1,0 +1,72 @@
+.version: monocle/v2
+
+.phony:
+  - shreds
+  - build
+  - test
+
+.variables:
+  eval:
+    gitShortRev: git rev-parse --short HEAD
+  env:
+    # for the very least, this is valid in semaphore.ci
+    gitBranch: BRANCH_NAME
+
+.on_inspect:
+  - run: test
+  - run: build
+
+db:
+  image: postgresql:9.6
+  ports:
+    - 5432
+  readiness:
+    cmd: psql -u postgres 'select 1;'
+    initial_delay: 10
+    repeat: 2
+  roam: true
+
+redis:
+  image: redis:alpine
+  ports:
+    - 6379
+  readiness:
+    cmd: redis-cli ping
+    initial_delay: 5
+    repeat: 2
+  roam: true
+
+shreds: &shreds
+  image: shreds:latest
+  depends_on:
+    - db
+    - redis
+  dependencies_setup:
+    - db: rails db:migrate
+  volumes:
+    - .:/srv/shreds
+
+app: *shreds
+  ports:
+    - 8080:8080
+  env:
+    RAILS_ENV: development
+  cmd: bundle exec foreman start
+
+test: *shreds
+  env:
+    RAILS_ENV: test
+  cmd: bundle exec rake test
+
+build:
+  build:
+    tags:
+      - fudanchii/shreds:{{.Env.gitBranch}}-{{.Eval.gitShortRev}}
+      - fudanchii/shreds:latest
+    context: ./
+    push:
+      server: quay.io
+      username: {{.Env.dockerUser}}
+      password: {{.Env.dockerPassword}}
+
+# vi: ft=yaml
